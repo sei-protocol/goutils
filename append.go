@@ -26,13 +26,13 @@ package goutils
 // Helpers in this file are meant to prevent this kind of issue by hiding away the direct `append` calls.
 
 // Assigning the result of `append` to the same slice variable is immune from the issue shown above.
-func InPlaceAppend[T any](old *[]T, elems ...T) {
+func InPlaceAppend[T ~[]I, I any](old *T, elems ...I) {
 	*old = append(*old, elems...)
 }
 
 // If the result of `append` needs to be reassigned, it needs to be done in an immutable way.
-func ImmutableAppend[T any](old []T, elems ...T) []T {
-	res := make([]T, len(old)+len(elems))
+func ImmutableAppend[T ~[]I, I any](old T, elems ...I) T {
+	res := make([]I, len(old)+len(elems))
 	copy(res, old)
 	copy(res[len(old):], elems)
 	return res

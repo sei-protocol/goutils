@@ -10,6 +10,14 @@ type TestStruct struct {
 	i int
 }
 
+func (s *TestStruct) Func1() {}
+
+type TestInterface interface {
+	Func1()
+}
+
+type TestAlias []TestInterface
+
 func TestInPlaceAppend(t *testing.T) {
 	bytes := []byte{}
 	InPlaceAppend(&bytes, 'x')
@@ -42,6 +50,10 @@ func TestInPlaceAppend(t *testing.T) {
 	require.Equal(t, []*TestStruct{{1}, {2}, {3}}, structPtrs)
 	InPlaceAppend(&structPtrs, []*TestStruct{{4}, {5}}...)
 	require.Equal(t, []*TestStruct{{1}, {2}, {3}, {4}, {5}}, structPtrs)
+
+	alias := TestAlias([]TestInterface{})
+	InPlaceAppend[TestAlias, TestInterface](&alias, &TestStruct{1})
+	require.Equal(t, TestAlias([]TestInterface{&TestStruct{1}}), alias)
 }
 
 func TestImmutableAppend(t *testing.T) {
@@ -112,4 +124,15 @@ func TestImmutableAppend(t *testing.T) {
 	require.Equal(t, []*TestStruct{{1}, {2}, {3}, {4}}, ImmutableAppend(prefix4, &TestStruct{4}))
 	require.Equal(t, []*TestStruct{{1}, {2}, {3}, {5}}, ImmutableAppend(prefix4, &TestStruct{5}))
 	require.Equal(t, []*TestStruct{{1}, {2}, {3}}, prefix4)
+
+	// no capacity
+	prefix5 := TestAlias([]TestInterface{})
+	require.Equal(t, TestAlias([]TestInterface{&TestStruct{1}}), ImmutableAppend[TestAlias, TestInterface](prefix5, &TestStruct{1}))
+	require.Equal(t, TestAlias([]TestInterface{&TestStruct{2}}), ImmutableAppend[TestAlias, TestInterface](prefix5, &TestStruct{2}))
+
+	// has capacity
+	prefix5 = TestAlias([]TestInterface{})
+	prefix5 = append(prefix5, &TestStruct{0})
+	require.Equal(t, TestAlias([]TestInterface{&TestStruct{0}, &TestStruct{1}}), ImmutableAppend[TestAlias, TestInterface](prefix5, &TestStruct{1}))
+	require.Equal(t, TestAlias([]TestInterface{&TestStruct{0}, &TestStruct{2}}), ImmutableAppend[TestAlias, TestInterface](prefix5, &TestStruct{2}))
 }
